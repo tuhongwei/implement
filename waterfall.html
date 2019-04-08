@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>瀑布流</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .item {
+      font-size: 30px;
+      font-weight: 700;
+      color: aliceblue;
+      padding-left: 15px;
+      padding-right: 15px;
+      padding-bottom: 28px;
+      width: 205px;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    .item div {
+      height: 100%;
+    }
+    .item-1 {
+      height: 300px;
+    }
+    .item-1 div{
+      background-color: rgb(206, 169, 169);
+    }
+    .item-2 {
+      height: 150px;
+    }
+    .item-2 div{
+      background-color: rgb(131, 226, 174);
+    }
+    .item-3 {
+      height: 350px;
+    }
+    .item-3 div{
+      background-color: rgb(77, 30, 30);
+    }
+    .item-4 {
+      height: 300px;
+    }
+    .item-4 div{
+      background-color: rgb(49, 62, 134);
+    }
+    .item-5 {
+      height: 200px;
+    }
+    .item-5 div{
+      background-color: rgb(230, 99, 99);
+    }
+    .item-6 {
+      height: 300px;
+    }
+    .item-6 div{
+      background-color: rgb(206, 169, 169);
+    }
+    .item-7 {
+      height: 400px;
+    }
+    .item-7 div{
+      background-color: rgb(124, 126, 145);
+    }
+    .item-8 {
+      height: 230px;
+    }
+    .item-8 div{
+      background-color: rgb(169, 199, 38);
+    }
+    .item-9 {
+      height: 300px;
+    }
+    .item-9 div{
+      background-color: rgb(114, 128, 53);
+    }
+    .item-10 {
+      height: 260px;
+    }
+    .item-10 div{
+      background-color: rgb(48, 54, 18);
+    }
+    .item-11 {
+      height: 230px;
+    }
+    .item-11 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-12 {
+      height: 240px;
+    }
+    .item-12 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-13 {
+      height: 250px;
+    }
+    .item-13 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-14 {
+      height: 270px;
+    }
+    .item-14 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-15 {
+      height: 330px;
+    }
+    .item-15 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-16 {
+      height: 200px;
+    }
+    .item-16 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-17 {
+      height: 100px;
+    }
+    .item-17 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-18 {
+      height: 400px;
+    }
+    .item-18 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-19 {
+      height: 340px;
+    }
+    .item-19 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-20 {
+      height: 350px;
+    }
+    .item-20 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-21 {
+      height: 360px;
+    }
+    .item-21 div{
+      background-color: rgb(118, 122, 96);
+    }
+    .item-22 {
+      height: 370px;
+    }
+    .item-22 div{
+      background-color: rgb(118, 122, 96);
+    }
+  </style>
+</head>
+<body>
+  <div id="box">
+    <div class="item item-1"><div>1</div></div>
+    <div class="item item-2"><div>2</div></div>
+    <div class="item item-3"><div>3</div></div>
+    <div class="item item-4"><div>4</div></div>
+    <div class="item item-5"><div>5</div></div>
+    <div class="item item-6"><div>6</div></div>
+    <div class="item item-7"><div>7</div></div>
+    <div class="item item-8"><div>8</div></div>
+    <div class="item item-9"><div>9</div></div>
+    <div class="item item-10"><div>10</div></div>
+    <div class="item item-11"><div>11</div></div>
+    <div class="item item-12"><div>12</div></div>
+    <div class="item item-13"><div>13</div></div>
+    <div class="item item-14"><div>14</div></div>
+    <div class="item item-15"><div>15</div></div>
+    <div class="item item-16"><div>16</div></div>
+    <div class="item item-17"><div>17</div></div>
+    <div class="item item-18"><div>18</div></div>
+    <div class="item item-19"><div>19</div></div>
+    <div class="item item-20"><div>20</div></div>
+    <div class="item item-21"><div>21</div></div>
+    <div class="item item-22"><div>22</div></div>        
+  </div>
+  <script>
+    var items = document.querySelectorAll('.item');
+
+    function waterFall () {
+      var pageWidth = getClient().width;
+      var itemWidth = items[0].offsetWidth;
+      var columns = parseInt(pageWidth / itemWidth);
+      var arr = [];
+      for(var i=0, l=items.length; i<l; i++) {
+        if (i < columns) {
+          items[i].style.transform = 'translateX(' + itemWidth * i + 'px) translateY(0)';
+          arr.push(items[i].offsetHeight);
+        } else {
+          var minHeight = arr[0];
+          var index = 0;
+          for (var j=0; j<arr.length; j++) {
+            if (minHeight > arr[j]) {
+              minHeight = arr[j];
+              index = j;
+            }
+          }
+          items[i].style.transform = 'translateX(' + itemWidth * index + 'px) translateY(' + minHeight + 'px)';
+          arr[index] += items[i].offsetHeight;
+        }
+      }
+    }
+    window.onload = window.onresize = function () {
+      waterFall();
+    };
+    function getClient () {
+      return {
+        width: window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth,
+        height: window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+      };
+    }
+  </script>
+</body>
+</html>
