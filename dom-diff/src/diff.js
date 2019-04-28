@@ -1,4 +1,4 @@
-function diff (oldTree, new Tree) {
+function diff (oldTree, newTree) {
   // 声明变量patches用来存放补丁的对象
   let patches = {};
   // 第一次比较应该是树的第0个索引
@@ -25,7 +25,7 @@ function walk (oldTree, newTree, index, patches) {
       current.push({type: 'ATTR', attr});
     }
     // 如果有子节点，遍历子节点
-    diffChildren(oldTree.children, newTree.children);
+    diffChildren(oldTree.children, newTree.children, patches);
   } else {
     // 说明节点被替换了
     current.push({type: 'REPLACE', newTree});
@@ -42,9 +42,29 @@ function isString (obj) {
 }
 
 function diffAttr (oldProps, newProps) {
-
+  let patch = {};
+  // 判断老的属性中和新的属性的关系
+  for (let key in oldProps) {
+    if (oldProps[key] !== newProps[key]) {
+      patch[key] = newProps[key]; // 有可能还是undefined
+    }
+  }
+  for (let key in newProps) {
+    // 老节点没有新节点的属性
+    if (!oldProps.hasOwnProperty(key)) {
+      patch[key] = newProps[key];
+    }
+  }
+  return patch;
 }
 
-function diffChildren (oldChildren, newChildren) {
-  
+// 所有都基于一个序号来实现
+let num = 0;
+function diffChildren (oldChildren, newChildren, patches) {
+  // 比较老的第一个和新的第一个
+  oldChildren.forEach((child, index) => {
+    walk(child, newChildren[index], ++num, patches);
+  })
 }
+
+export default diff;
