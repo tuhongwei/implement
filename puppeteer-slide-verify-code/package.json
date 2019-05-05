@@ -1,0 +1,14 @@
+{
+  "name": "puppeteer-slide-verify-code",
+  "version": "1.0.0",
+  "description": "puppeteer滑动验证码",
+  "main": "slide-verify-code.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Twittytop",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^1.15.0"
+  }
+}

@@ -76,15 +76,31 @@ function Promise (Fn) {
 }
 
 Promise.prototype.then = (onFulfilled, onRejected) => {
-  if (this.status === 'PENDING') {
-    isFunction(onFulfilled) && this.resolves.push(onFulfilled);
-    isFunction(onRejected) && this.rejects.push(onRejected);
-  } else if (this.status === 'FULFILLED'){
-    isFunction(onFulfilled) && onFulfilled(this.value);
-  } else if (this.status === 'REJECTED'){
-    isFunction(onRejected) && onRejected(this.reason);
-  }
-  return this;
+  let promise = this;
+  return new Promise((resolve, reject) => {
+    function success (value) {
+      let val = typeof onFulfilled === 'function' && onFulfilled(value) || value;
+      if (val && typeof val['then'] === 'function') {
+        val.then(value => {
+          resolve(value);
+        }, reason => {
+          reject(reason);
+        });
+      }
+    }
+    function erro (reason) {
+      let rea = typeof onRejected === 'function' && onRejected(reason) || reason;
+      reject(reason);
+    }
+    if (promise.status === 'PENDING') {
+      promise.resolves.push(success);
+      promise.rejects.push(erro);
+    } else if (promise.status === 'FULFILLED'){
+      success(promise.value);
+    } else if (promise.status === 'REJECTED'){
+      erro(promise.reason);
+    }
+  });
 }
 Promise.prototype.catch = (onRejected) => {
   return this.then(null, onRejected);
