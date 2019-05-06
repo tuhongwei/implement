@@ -86,6 +86,8 @@ Promise.prototype.then = (onFulfilled, onRejected) => {
         }, reason => {
           reject(reason);
         });
+      } else {
+        resolve(val);
       }
     }
     function erro (reason) {
@@ -96,8 +98,10 @@ Promise.prototype.then = (onFulfilled, onRejected) => {
       promise.resolves.push(success);
       promise.rejects.push(erro);
     } else if (promise.status === 'FULFILLED'){
+      console.log('FULFILLED')
       success(promise.value);
     } else if (promise.status === 'REJECTED'){
+      onsole.log('REJECTED')
       erro(promise.reason);
     }
   });
@@ -105,19 +109,26 @@ Promise.prototype.then = (onFulfilled, onRejected) => {
 Promise.prototype.catch = (onRejected) => {
   return this.then(null, onRejected);
 }
-let getInfo = new Promise((resolve, reject) => {
-  resolve('success');
-}).then(r => {
-  console.log(r);
-  return r + '1';
-}).then(r => {
-  console.log(r);
-  return r + '2';
-});
-
-setTimeout(() => {
-  getInfo.then(r => {
-    console.log(r);
-    return r + '3';
-  });
+function getInfo(success, fail) {
+  return new Promise((resolve, reject) => {
+    setTimeout(_ => {
+      let ran = Math.random();
+      console.log(success, ran);
+      if (ran > 0.5) {
+        resolve(success);
+      } else {
+        reject(fail);
+      }
+    }, 200);
+  })
+}
+getInfo('Vchat', 'fail').then(res => {
+  console.log(res);
+  return getInfo('可以线上预览了', 'erro');
+}, rej => {
+  console.log(rej);
+}).then(res => {
+  console.log(res);
+}, rej => {
+  console.log(rej);
 });
