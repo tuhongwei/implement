@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>js引用问题测试</title>
+  <style>
+    p {
+      width: 50px;
+      height: 50px;
+      border: 1px solid pink;
+    }
+  </style>
+</head>
+<body>
+  <p onclick="btnClick()">按钮</p>
+  <script>
+    function getEnStr(obj) {
+      var sign = getSign(obj);
+      obj.sign = sign;
+      var str = JSON.stringify(obj);
+      return str;
+    }
+
+    function getSign(obj) {
+      console.log('sign', obj)
+      var sign = "";
+      let keys = Object.keys(obj);
+      keys.sort(function(a, b) {
+        return a.localeCompare(b);
+      });
+      for (let i of keys) {
+        if (!obj[i]) {
+          obj[i] = "";
+        }
+        // let value = obj[i].replace(/\s/g, "+");
+        let value = obj[i];
+        let key = `${i}=${value}#`;
+        sign += key;
+      }
+      return (`${sign}`);
+    }
+    window.onload = function () {
+      
+    }
+    function btnClick () {
+      var param = {
+        a: 1,
+        b: 2,
+        c: 3
+      };
+      var data = getEnStr(param);
+      console.log(data)
+    }
+  </script>
+</body>
+</html>
