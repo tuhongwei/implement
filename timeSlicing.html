@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>时间切片</title>
+</head>
+<body>
+  <p>把长任务切割成多个小任务</p>
+	<script>
+    function ts (gen) {
+      if (typeof gen === 'function') gen = gen()
+      if (!gen || typeof gen.next !== 'function') return
+
+      (function next () {
+        const res = gen.next()
+        if (res.done) return 
+        setTimeout(next)
+      })()
+    }
+
+    // 改进版
+    function ts1 (gen) {
+      if(typeof gen === 'function') gen = gen()
+      if(!gen || typeof gen.next !== 'function') return
+      (function next() {
+        const start = performance.now()
+        let res = null
+        do {
+          res = gen.next()
+        } while(!res.done && performance.now() - start < 25)
+        if (res.done) return
+        setTimeout(next)
+      })()
+    }
+
+    /*
+    * @test
+    */
+    ts1(function* () {
+      const start = performance.now()
+      while (performance.now() - start < 1000) {
+        console.log(11)
+        yield
+      }
+      console.log('done!')
+    });
+	</script>
+</body>
+</html>
