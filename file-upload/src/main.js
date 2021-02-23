@@ -2,8 +2,12 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 
-import { Button } from 'element-ui';
-Vue.component(Button.name, Button);
+import { Button, Table, TableColumn, progress, Message } from 'element-ui';
+Vue.use(Button);
+Vue.use(Table);
+Vue.use(TableColumn);
+Vue.use(progress);
+Vue.prototype.$message = Message;
 
 Vue.config.productionTip = false
 
