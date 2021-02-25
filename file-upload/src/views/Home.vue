@@ -2,6 +2,12 @@
    <div>
     <input type="file" @change="handleFileChange" />
     <el-button @click="handleUpload">上传</el-button>
+    <div>
+      <div>计算文件 hash</div>
+      <el-progress :text-inside="true" :stroke-width="24" :percentage="hashPercentage"></el-progress>
+      <div>总进度</div>
+      <!-- <el-progress :percentage="fakeUploadPercentage"></el-progress> -->
+    </div>
   </div>
 
 </template>
@@ -16,7 +22,10 @@ export default {
   data: () => ({
     container: {
       file: null
-    }
+    },
+    hashPercentage: 0,
+    fakeUploadPercentage: 0,
+    data: []
   }),
   methods: {
     reuqest ({ url, method = 'post', data, headers, reuqestList }) {
@@ -41,20 +50,21 @@ export default {
       this.container.file = file;
 
     },
-    createFileChunk (file, size = SIZE) {
+    createFileChunk (file) {
       const fileChunkList = [];
       let cur = 0;
       while (cur < file.size) {
         fileChunkList.push({
-          file: file.slice(cur, cur + size),
+          file: file.slice(cur, cur + SIZE),
         });
-        cur += size;
+        cur += SIZE;
       }
       return fileChunkList;
     },
     async handleUpload () {
       if (!this.container.file) return;
       const fileChunkList = this.createFileChunk(this.container.file);
+      this.container.hash = await this.calculateHash(fileChunkList);
       this.data = fileChunkList.map(({ file }, index) => {
         return {
           chunk: file,
@@ -69,12 +79,40 @@ export default {
         formData.append('chunk', chunk);
         formData.append('hash', hash);
         formData.append('fileName', this.container.file.name);
+        formData.append('fileHash', this.container.hash);
         return this.reuqest({
           url: 'http://localhost:3000',
           data: formData
         });
       });
-      Promise.all(reuqestList);
+      await Promise.all(reuqestList);
+      await this.postMergeRequest();
+    },
+    // 通知服务端合并请求
+    async postMergeRequest () {
+      this.reuqest({
+        url: 'http://localhost:3000/merge',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+          size: SIZE,
+          fileHash: this.container.hash,
+          fileName: this.container.file.name
+        })
+      });
+    },
+    // 用web-worker生成文件hash值
+    calculateHash (fileChunkList) {
+      return new Promise (resolve => {
+        const worker = new Worker('/generate-hash.js');
+        worker.postMessage({ fileChunkList, fileSize: this.container.file.size });
+        worker.onmessage = e => {
+          const { percentage, hash } = e.data;
+          this.hashPercentage = percentage;
+          hash && (resolve(hash));
+        };
+      });
     }
   }
 };
