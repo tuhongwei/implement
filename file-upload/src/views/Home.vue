@@ -15,8 +15,8 @@
 <script>
 import { Button } from 'element-ui';
 
-const SIZE = 10 * 1024 * 1024; // 切片大小
-// const SIZE = 10 * 1024;
+// const SIZE = 10 * 1024 * 1024; // 切片大小
+const SIZE = 10 * 1024;
 
 export default {
   data: () => ({

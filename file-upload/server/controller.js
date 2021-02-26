@@ -20,8 +20,8 @@ const resolvePost = req =>
 const pipStream = (path, writeStream) => 
   new Promise(resolve => {
     const readStream = fse.createReadStream(path);
-    console.log(path)
-    readStream.on('end', () => {
+    writeStream.on('finish', () => {
+    	writeStream.end();
       fse.unlinkSync(path);
       resolve();
     });
