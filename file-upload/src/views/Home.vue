@@ -15,8 +15,8 @@
 <script>
 import { Button } from 'element-ui';
 
-// const SIZE = 10 * 1024 * 1024; // 切片大小
-const SIZE = 10 * 1024;
+const SIZE = 10 * 1024 * 1024; // 切片大小
+// const SIZE = 10 * 1024;
 
 export default {
   data: () => ({
@@ -28,7 +28,7 @@ export default {
     data: []
   }),
   methods: {
-    reuqest ({ url, method = 'post', data, headers, reuqestList }) {
+    request ({ url, method = 'post', data, headers, requestList }) {
       return new Promise (resolve => {
         const xhr = new XMLHttpRequest();
         xhr.open(method, url);
@@ -73,23 +73,23 @@ export default {
       await this.uploadChunks();
     },
     async uploadChunks () {
-      const reuqestList = this.data.map(async ({ chunk, hash }) => {
+      const requestList = this.data.map(async ({ chunk, hash }) => {
         const formData = new FormData();
         formData.append('chunk', chunk);
         formData.append('hash', hash);
         formData.append('fileName', this.container.file.name);
         formData.append('fileHash', this.container.hash);
-        return this.reuqest({
+        return this.request({
           url: 'http://localhost:3000',
           data: formData
         });
       });
-      await Promise.all(reuqestList);
+      await Promise.all(requestList);
       await this.postMergeRequest();
     },
     // 通知服务端合并请求
     async postMergeRequest () {
-      this.reuqest({
+      this.request({
         url: 'http://localhost:3000/merge',
         headers: {
           'Content-Type': 'application/json'
