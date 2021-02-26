@@ -15,8 +15,8 @@
 <script>
 import { Button } from 'element-ui';
 
-const SIZE = 10 * 1024 * 1024; // 切片大小
-
+// const SIZE = 10 * 1024 * 1024; // 切片大小
+const SIZE = 10 * 1024;
 
 export default {
   data: () => ({
@@ -65,12 +65,11 @@ export default {
       if (!this.container.file) return;
       const fileChunkList = this.createFileChunk(this.container.file);
       this.container.hash = await this.calculateHash(fileChunkList);
-      this.data = fileChunkList.map(({ file }, index) => {
-        return {
+      this.data = fileChunkList.map(({ file }, index) => ({
           chunk: file,
           hash: this.container.file.name + '-' + index
-        };
-      });
+        })
+      );
       await this.uploadChunks();
     },
     async uploadChunks () {

@@ -1,8 +1,6 @@
-const Controller = require("./controller");
+const controller = require("./controller");
 const http = require("http");
 const server = http.createServer();
-
-const controller = new Controller();
 
 server.on("request", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");

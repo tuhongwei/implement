@@ -3,10 +3,10 @@ const path = require("path");
 const fse = require("fs-extra");
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', 'target');
-const extractExt = filename =>
-  filename.slice(filename.lastIndexOf(".")); // 提取后缀名
+const extractExt = fileName =>
+  fileName.slice(fileName.lastIndexOf(".")); // 提取后缀名
 
-const resolvePost = req => {
+const resolvePost = req => 
   new Promise(resolve => {
     let chunk = '';
     req.on('data', data => {
@@ -16,26 +16,44 @@ const resolvePost = req => {
       resolve(JSON.parse(chunk))
     });
   });
+
+const pipStream = (path, writeStream) => 
+  new Promise(resolve => {
+    const readStream = fse.createReadStream(path);
+    console.log(path)
+    readStream.on('end', () => {
+      fse.unlinkSync(path);
+      resolve();
+    });
+    readStream.pipe(writeStream);
+  });
+
+const mergeFileChunk = async (fileHash, fileName, size) => {
+  const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
+  const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
+  const chunkPaths = await fse.readdir(chunkDir);
+  chunkPaths.sort((a, b) => a.slice(a.lastIndexOf('-') + 1) - b.slice(b.lastIndexOf('-') + 1));
+  await Promise.all(chunkPaths.map((chunkPath, index) => 
+    pipStream(path.resolve(chunkDir, chunkPath), fse.createWriteStream(filePath, {
+      start: index * size
+    }))
+  ));
+  fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
 };
 
-const mergeFileChunk = (filePath, fileHash, size) => {
-  
-};
-
-module.exports = class {
+module.exports = {
   async handleVerifyUpload (req, res) {
+    
+  },
+  async handleMerge (req, res) {
     const data = await resolvePost(req);
     const { fileHash, fileName, size } = data;
-    const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
-    await mergeFileChunk(filePath, fileHash, size);
+    await mergeFileChunk(fileHash, fileName, size);
     res.end(JSON.stringify({
       code: 0,
-      msg: 'file merged success';
+      msg: 'file merged success'
     }));
-  }
-  handleMerge (req, res) {
-
-  }
+  },
   handleFormData (req, res) {
     const form = new multiparty.Form();
     form.parse(req, async (err, fields, files) => {
@@ -50,7 +68,6 @@ module.exports = class {
       const [fileHash] = fields.fileHash;
       const [fileName] = fields.fileName;
       const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
-      console.log(chunk, filePath, fse)
       const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
       if (fse.pathExistsSync(filePath)) {
         res.end('file exist');
@@ -63,4 +80,4 @@ module.exports = class {
       res.end('received file chunk');
     });
   }
-}
+};
