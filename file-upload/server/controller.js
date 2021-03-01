@@ -17,28 +17,34 @@ const resolvePost = req =>
     });
   });
 
-const pipStream = (path, writeStream) => 
-  new Promise(resolve => {
-    const readStream = fse.createReadStream(path);
-    writeStream.on('finish', () => {
-    	writeStream.end();
-      fse.unlinkSync(path);
+const pipeStream = (path, writeStream, chunkSize) => 
+  new Promise((resolve, reject) => {
+    const readStream = fse.createReadStream(path, {
+      highWaterMark: chunkSize
+    });
+    readStream.on('end', () => {
+      // fse.unlinkSync(path);
+      readStream.unpipe();
       resolve();
     });
-    readStream.pipe(writeStream);
+    readStream.pipe(writeStream, { end: false });
+    readStream.on('error', reject);
   });
 
-const mergeFileChunk = async (fileHash, fileName, size) => {
+const mergeFileChunk = async (fileHash, fileName, chunkSize) => {
   const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
   const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
   const chunkPaths = await fse.readdir(chunkDir);
   chunkPaths.sort((a, b) => a.slice(a.lastIndexOf('-') + 1) - b.slice(b.lastIndexOf('-') + 1));
-  await Promise.all(chunkPaths.map((chunkPath, index) => 
-    pipStream(path.resolve(chunkDir, chunkPath), fse.createWriteStream(filePath, {
-      start: index * size
-    }))
-  ));
-  fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
+  const writeStream = fse.createWriteStream(filePath);
+  await Promise.all(chunkPaths.map((chunkPath, index) =>
+    pipeStream(path.resolve(chunkDir, chunkPath), writeStream, chunkSize)
+  )).then(() => {
+    // close the stream to prevent memory leaks
+    writeStream.close();
+    return Promise.resolve(filePath);
+  })
+  // fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
 };
 
 module.exports = {
@@ -47,8 +53,8 @@ module.exports = {
   },
   async handleMerge (req, res) {
     const data = await resolvePost(req);
-    const { fileHash, fileName, size } = data;
-    await mergeFileChunk(fileHash, fileName, size);
+    const { fileHash, fileName, chunkSize } = data;
+    await mergeFileChunk(fileHash, fileName, chunkSize);
     res.end(JSON.stringify({
       code: 0,
       msg: 'file merged success'

@@ -15,8 +15,8 @@
 <script>
 import { Button } from 'element-ui';
 
-// const SIZE = 10 * 1024 * 1024; // 切片大小
-const SIZE = 10 * 1024;
+// const CHUNK_SIZE = 10 * 1024 * 1024; // 切片大小
+const CHUNK_SIZE = 10 * 1024;
 
 export default {
   data: () => ({
@@ -55,9 +55,9 @@ export default {
       let cur = 0;
       while (cur < file.size) {
         fileChunkList.push({
-          file: file.slice(cur, cur + SIZE),
+          file: file.slice(cur, cur + CHUNK_SIZE),
         });
-        cur += SIZE;
+        cur += CHUNK_SIZE;
       }
       return fileChunkList;
     },
@@ -95,7 +95,7 @@ export default {
           'Content-Type': 'application/json'
         },
         data: JSON.stringify({
-          size: SIZE,
+          chunkSize: CHUNK_SIZE,
           fileHash: this.container.hash,
           fileName: this.container.file.name
         })
@@ -105,7 +105,7 @@ export default {
     calculateHash (fileChunkList) {
       return new Promise (resolve => {
         const worker = new Worker('/generate-hash.js');
-        worker.postMessage({ fileChunkList, fileSize: this.container.file.size });
+        worker.postMessage({ fileChunkList, fileSize: this.container.file.size, chunkSize: CHUNK_SIZE });
         worker.onmessage = e => {
           const { percentage, hash } = e.data;
           this.hashPercentage = percentage;
