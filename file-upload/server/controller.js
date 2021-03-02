@@ -23,8 +23,7 @@ const pipeStream = (path, writeStream, chunkSize) =>
       highWaterMark: chunkSize
     });
     readStream.on('end', () => {
-      // fse.unlinkSync(path);
-      readStream.unpipe();
+      fse.unlinkSync(path);
       resolve();
     });
     readStream.pipe(writeStream, { end: false });
@@ -37,6 +36,8 @@ const mergeFileChunk = async (fileHash, fileName, chunkSize) => {
   const chunkPaths = await fse.readdir(chunkDir);
   chunkPaths.sort((a, b) => a.slice(a.lastIndexOf('-') + 1) - b.slice(b.lastIndexOf('-') + 1));
   const writeStream = fse.createWriteStream(filePath);
+  // 避免MaxListenersExceededWarning的警告
+  writeStream.setMaxListeners(0);
   await Promise.all(chunkPaths.map((chunkPath, index) =>
     pipeStream(path.resolve(chunkDir, chunkPath), writeStream, chunkSize)
   )).then(() => {
@@ -44,7 +45,7 @@ const mergeFileChunk = async (fileHash, fileName, chunkSize) => {
     writeStream.close();
     return Promise.resolve(filePath);
   })
-  // fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
+  fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
 };
 
 module.exports = {
