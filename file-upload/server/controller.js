@@ -1,6 +1,7 @@
 const multiparty = require("multiparty");
 const path = require("path");
 const fse = require("fs-extra");
+// var concat = require('concat-files');
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', 'target');
 const extractExt = fileName =>
@@ -35,6 +36,16 @@ const mergeFileChunk = async (fileName, fileHash, chunkSize) => {
   const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
   const chunkPaths = await fse.readdir(chunkDir);
   chunkPaths.sort((a, b) => a.slice(a.lastIndexOf('-') + 1) - b.slice(b.lastIndexOf('-') + 1));
+  // for (let i = 0; i < chunkPaths.length; i++) {
+  //   chunkPaths[i] = path.resolve(chunkDir, chunkPaths[i]);
+  // }
+  // concat(chunkPaths, filePath, err => {
+  //   if (err) {
+  //     console.log(err)
+  //   } else {
+  //     console.log('Merge Success!')
+  //   }
+  // });
   const writeStream = fse.createWriteStream(filePath);
   // 避免MaxListenersExceededWarning的警告
   writeStream.setMaxListeners(0);

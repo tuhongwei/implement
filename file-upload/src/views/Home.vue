@@ -6,9 +6,9 @@
     <el-button v-else :disabled="curStatus !== STATUS.uploading || !container.hash" @click="handlePause">暂停</el-button>
     <div>
       <div>计算文件 hash</div>
-      <el-progress :text-inside="true" :stroke-width="24" :percentage="hashPercentage"></el-progress>
+      <el-progress :text-inside="true" :stroke-width="18" :percentage="hashPercentage"></el-progress>
       <div>总进度</div>
-      <el-progress :percentage="uploadPercentage"></el-progress>
+      <el-progress :text-inside="true" :stroke-width="18" :percentage="fakeUploadPercentage"></el-progress>
     </div>
     <el-table :data=data>
       <el-table-column prop="hash" label="切片hash" align="center"></el-table-column>
@@ -30,8 +30,8 @@
 <script>
 import { Button } from 'element-ui';
 
-// const CHUNK_SIZE = 10 * 1024 * 1024; // 切片大小
-const CHUNK_SIZE = 10 * 1024;
+const CHUNK_SIZE = 10 * 1024 * 1024; // 切片大小
+// const CHUNK_SIZE = 10 * 1024;
 const STATUS = {
   wait: Symbol('wait'),
   pause: Symbol('pause'),
@@ -47,7 +47,8 @@ export default {
     hashPercentage: 0,
     fakeUploadPercentage: 0,
     data: [],
-    curStatus: STATUS.wait
+    curStatus: STATUS.wait,
+    requestList: []
   }),
   filters: {
     transformByte (val) {
@@ -59,6 +60,13 @@ export default {
       if (!this.container.file || !this.data.length) return 0;
       let loaded = this.data.reduce((acc, cur) => acc + cur.chunk.size * cur.percentage, 0);
       return +(loaded / this.container.file.size).toFixed(2);
+    }
+  },
+  watch: {
+    uploadPercentage (newVal) {
+      if (newVal > this.fakeUploadPercentage) {
+        this.fakeUploadPercentage = newVal;
+      }
     }
   },
   methods: {
@@ -105,6 +113,7 @@ export default {
     handleFileChange(e) {
       const [file] = e.target.files;
       if (!file) return;
+      this.resetData();
       Object.assign(this.$data, this.$options.data());
       this.container.file = file;
     },
@@ -134,8 +143,8 @@ export default {
 
       this.data = fileChunkList.map(({ file }, index) => ({
         chunk: file,
-        hash: this.container.file.name + '-' + index,
-        percentage: 0
+        hash: this.container.hash + '-' + index,
+        percentage: uploadedList.includes(this.container.hash + "-" + index) ? 100 : 0
       }));
       await this.uploadChunks(uploadedList);
     },
@@ -167,7 +176,9 @@ export default {
         });
       });
       await Promise.all(requestList);
-      await this.postMergeRequest();
+      if (uploadedList.length + requestList.length === this.data.length) {
+        await this.postMergeRequest();
+      }
     },
     uploadOnprogressHandler (item) {
       return e => {
