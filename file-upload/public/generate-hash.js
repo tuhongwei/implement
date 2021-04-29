@@ -21,9 +21,9 @@ self.onmessage = e => {
   };
 
   fileReader.onprogress = e => {
-    // console.log('计算文件hash进度', (e.loaded + chunkSize * count) / fileSize * 100);
+    // console.log('计算文件hash进度', +((e.loaded + chunkSize * count) / fileSize * 100)).toFixed(2);
     self.postMessage({
-      percentage: (e.loaded + chunkSize * count) / fileSize * 100
+      percentage: +((e.loaded + chunkSize * count) / fileSize * 100).toFixed(2)
     });
   };
 

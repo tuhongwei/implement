@@ -1,6 +1,7 @@
 const multiparty = require("multiparty");
 const path = require("path");
 const fse = require("fs-extra");
+// var concat = require('concat-files');
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', 'target');
 const extractExt = fileName =>
@@ -23,38 +24,75 @@ const pipeStream = (path, writeStream, chunkSize) =>
       highWaterMark: chunkSize
     });
     readStream.on('end', () => {
-      // fse.unlinkSync(path);
-      readStream.unpipe();
+      fse.unlinkSync(path);
       resolve();
     });
     readStream.pipe(writeStream, { end: false });
     readStream.on('error', reject);
   });
 
-const mergeFileChunk = async (fileHash, fileName, chunkSize) => {
+const mergeFileChunk = async (fileName, fileHash, chunkSize) => {
   const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
   const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
   const chunkPaths = await fse.readdir(chunkDir);
   chunkPaths.sort((a, b) => a.slice(a.lastIndexOf('-') + 1) - b.slice(b.lastIndexOf('-') + 1));
+  // for (let i = 0; i < chunkPaths.length; i++) {
+  //   chunkPaths[i] = path.resolve(chunkDir, chunkPaths[i]);
+  // }
+  // concat(chunkPaths, filePath, err => {
+  //   if (err) {
+  //     console.log(err)
+  //   } else {
+  //     console.log('Merge Success!')
+  //   }
+  // });
   const writeStream = fse.createWriteStream(filePath);
+  // 避免MaxListenersExceededWarning的警告
+  writeStream.setMaxListeners(0);
   await Promise.all(chunkPaths.map((chunkPath, index) =>
     pipeStream(path.resolve(chunkDir, chunkPath), writeStream, chunkSize)
   )).then(() => {
     // close the stream to prevent memory leaks
     writeStream.close();
     return Promise.resolve(filePath);
-  })
-  // fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
+  });
+  fse.rmdirSync(chunkDir); //  合并完成后删除切片目录
+};
+
+// 获取已经上传完的切片
+const getUploadedList = async fileHash => {
+  const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
+  return fse.pathExistsSync(chunkDir) ? await fse.readdir(chunkDir) : [];
 };
 
 module.exports = {
   async handleVerifyUpload (req, res) {
-    
+    const data = await resolvePost(req);
+    const { fileName, fileHash } = data;
+    const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
+    if (fse.pathExistsSync(filePath)) {
+      res.end(JSON.stringify({
+        code: 0,
+        msg: 'success',
+        data: {
+          shouldUpload: false
+        }
+      }));
+    } else {
+      res.end(JSON.stringify({
+        code: 0,
+        msg: 'success',
+        data: {
+          shouldUpload: true,
+          uploadedList: await getUploadedList(fileHash)
+        }
+      }));
+    }
   },
   async handleMerge (req, res) {
     const data = await resolvePost(req);
-    const { fileHash, fileName, chunkSize } = data;
-    await mergeFileChunk(fileHash, fileName, chunkSize);
+    const { fileName, fileHash, chunkSize } = data;
+    await mergeFileChunk(fileName, fileHash, chunkSize);
     res.end(JSON.stringify({
       code: 0,
       msg: 'file merged success'
@@ -66,7 +104,10 @@ module.exports = {
       if (err) {
         console.log(err);
         res.status = 500;
-        res.end('process file chunk failed');
+        res.end(JSON.stringify({
+          code: 2001,
+          msg: 'process file chunk failed'
+        }));
         return;
       }
       const [chunk] = files.chunk;
@@ -76,14 +117,20 @@ module.exports = {
       const filePath = path.resolve(UPLOAD_DIR, `${fileHash}${extractExt(fileName)}`);
       const chunkDir = path.resolve(UPLOAD_DIR, fileHash);
       if (fse.pathExistsSync(filePath)) {
-        res.end('file exist');
+        res.end(JSON.stringify({
+          code: 2000,
+          msg: 'file exist'
+        }));
         return;
       }
       if (!fse.pathExistsSync(chunkDir)) {
         await fse.mkdirs(chunkDir);
       }
       await fse.move(chunk.path, path.resolve(chunkDir, hash));
-      res.end('received file chunk');
+      res.end(JSON.stringify({
+        code: 0,
+        msg: 'received file chunk'
+      }));
     });
   }
 };
